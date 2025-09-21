@@ -68,8 +68,8 @@ jobs:
         with:
           name: scraper-data
           path: |
-            data/
-            !data/cache/
+            data/articles.json
+            data/learned_kanji.json
           retention-days: 7
 
       - name: Setup Pages
