@@ -59,18 +59,7 @@ jobs:
         env:
           WANIKANI_API_TOKEN: ${{ secrets.WANIKANI_API_TOKEN }}
         run: |
-          cd src
-          uv run python main.py
-
-      - name: Upload artifacts for debugging
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: scraper-data
-          path: |
-            data/articles.json
-            data/learned_kanji.json
-          retention-days: 7
+          uv run python src/main.py
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
