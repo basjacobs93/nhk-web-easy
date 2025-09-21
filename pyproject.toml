@@ -1,0 +1,13 @@
+[project]
+name = "nhkeasier"
+requires-python = ">=3.12"
+version = "0.1.0"
+description = "NHK Easy News scraper with WaniKani integration"
+dependencies = [
+    "requests",
+    "beautifulsoup4",
+    "pykakasi",
+    "pyyaml",
+    "lxml",
+    "jinja2"
+]

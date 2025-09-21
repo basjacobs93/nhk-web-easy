@@ -1,0 +1,17 @@
+scraper:
+  base_url: "https://www3.nhk.or.jp/news/easy/"
+  max_articles: 20
+  timeout: 30
+
+wanikani:
+  api_base: "https://api.wanikani.com/v2"
+  cache_duration: 3600 # seconds
+
+site:
+  title: "Bas's NHK Easy News"
+  description: "Japanese news practice with personalized furigana"
+  output_dir: "docs"
+
+github:
+  pages_branch: "main"
+  pages_dir: "docs"
