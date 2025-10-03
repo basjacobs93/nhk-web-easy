@@ -69,7 +69,7 @@ class NHKEasyScraper:
                             web_image_uri = article_info.get("news_web_image_uri", "")
 
                             if image_uri:
-                                image_url = f"https://news.web.nhk/news/easy/{news_id}/{image_uri}"
+                                image_url = image_uri#f"https://news.web.nhk/news/easy/{news_id}/{image_uri}"
                                 image_source = "easy"
                             elif web_image_uri:
                                 image_url = web_image_uri
@@ -313,7 +313,7 @@ class NHKEasyScraper:
                 # Download image if available
                 if article["image_url"]:
                     local_image_path = self.download_image(
-                        article["image_uri"],
+                        article["image_url"],
                         article["news_id"]
                     )
                     article["local_image_path"] = local_image_path
