@@ -16,7 +16,7 @@ class NHKEasyScraper:
             self.config = yaml.safe_load(f)
 
         self.base_url = self.config["scraper"]["base_url"]
-        self.json_url = "https://www3.nhk.or.jp/news/easy/news-list.json"
+        self.json_url = "https://news.web.nhk/news/easy/news-list.json"
         self.max_articles = self.config["scraper"]["max_articles"]
         self.timeout = self.config["scraper"]["timeout"]
 
@@ -62,14 +62,14 @@ class NHKEasyScraper:
 
                         if title and news_id:
                             # Construct the article URL
-                            article_url = f"https://www3.nhk.or.jp/news/easy/{news_id}/{news_id}.html"
+                            article_url = f"https://news.web.nhk/news/easy/{news_id}/{news_id}.html"
 
                             # Get image URI - prefer easy news image, fallback to web image
                             image_uri = article_info.get("news_easy_image_uri", "")
                             web_image_uri = article_info.get("news_web_image_uri", "")
 
                             if image_uri:
-                                image_url = f"https://www3.nhk.or.jp/news/easy/{news_id}/{image_uri}"
+                                image_url = f"https://news.web.nhk/news/easy/{news_id}/{image_uri}"
                                 image_source = "easy"
                             elif web_image_uri:
                                 image_url = web_image_uri
@@ -313,7 +313,7 @@ class NHKEasyScraper:
                 # Download image if available
                 if article["image_url"]:
                     local_image_path = self.download_image(
-                        article["image_url"],
+                        article["image_uri"],
                         article["news_id"]
                     )
                     article["local_image_path"] = local_image_path
