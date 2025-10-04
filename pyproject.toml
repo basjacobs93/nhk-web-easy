@@ -6,7 +6,6 @@ description = "NHK Easy News scraper with WaniKani integration"
 dependencies = [
     "requests",
     "beautifulsoup4",
-    "pykakasi",
     "pyyaml",
     "lxml",
     "jinja2",

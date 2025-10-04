@@ -1,14 +1,11 @@
 import re
 import json
 from pathlib import Path
-import pykakasi
+from bs4 import BeautifulSoup
 
 
 class FuriganaProcessor:
     def __init__(self, learned_kanji_file="data/learned_kanji.json"):
-        # Initialize kakasi for reading conversion
-        self.kakasi = pykakasi.kakasi()
-
         # Load learned kanji
         self.learned_kanji = self._load_learned_kanji(learned_kanji_file)
 
@@ -42,61 +39,80 @@ class FuriganaProcessor:
 
         return False
 
-    def _get_reading(self, text):
-        """Get hiragana reading for text using pykakasi"""
-        try:
-            result = self.kakasi.convert(text)
-            reading = "".join([item["hira"] for item in result])
-            return reading
-        except Exception as e:
-            print(f"Error converting {text} to hiragana: {e}")
-            return ""
+    def _parse_ruby_html(self, html_text):
+        """Parse HTML with ruby tags and extract segments"""
+        if not html_text:
+            return []
 
-    def _split_text_with_furigana(self, text):
-        """Split text into segments and add furigana where needed"""
+        soup = BeautifulSoup(html_text, "html.parser")
         segments = []
-        last_end = 0
 
-        # Find all kanji sequences
-        for match in self.kanji_pattern.finditer(text):
-            start, end = match.span()
-            kanji_text = match.group()
+        # Get the root element or body
+        root = soup.body if soup.body else soup
 
-            # Add text before kanji (if any)
-            if start > last_end:
-                before_text = text[last_end:start]
-                segments.append({
-                    "type": "text",
-                    "content": before_text
-                })
+        # Process direct children recursively
+        def process_element(element, preserve_tags=None):
+            if preserve_tags is None:
+                preserve_tags = {"p", "div", "br"}
 
-            # Check if this kanji group needs furigana
-            needs_furigana = self._contains_unknown_kanji(kanji_text)
+            if element.name == "ruby":
+                # Extract kanji and reading from ruby tag
+                kanji = ""
+                reading = ""
 
-            if needs_furigana:
-                reading = self._get_reading(kanji_text)
-                segments.append({
-                    "type": "furigana",
-                    "kanji": kanji_text,
-                    "reading": reading,
-                    "unknown": True
-                })
+                for child in element.children:
+                    if child.name == "rt":
+                        reading = child.get_text()
+                    elif child.name is None:  # Text node
+                        kanji += str(child)
+
+                if kanji and reading:
+                    # Check if this kanji group contains unknown kanji
+                    has_unknown = self._contains_unknown_kanji(kanji)
+
+                    segments.append({
+                        "type": "furigana" if has_unknown else "kanji",
+                        "kanji": kanji,
+                        "reading": reading,
+                        "unknown": has_unknown
+                    })
+            elif element.name is None:
+                # Text node
+                text = str(element)
+                if text:
+                    segments.append({
+                        "type": "text",
+                        "content": text
+                    })
+            elif element.name in preserve_tags:
+                # Preserve paragraph/div structure
+                if element.name == "br":
+                    segments.append({
+                        "type": "html",
+                        "content": "<br>"
+                    })
+                else:
+                    # Opening tag
+                    segments.append({
+                        "type": "html",
+                        "content": f"<{element.name}>"
+                    })
+                    # Process children
+                    for child in element.children:
+                        process_element(child, preserve_tags)
+                    # Closing tag
+                    segments.append({
+                        "type": "html",
+                        "content": f"</{element.name}>"
+                    })
             else:
-                segments.append({
-                    "type": "kanji",
-                    "content": kanji_text,
-                    "unknown": False
-                })
+                # Other HTML element - process its children without preserving the tag
+                for child in element.children:
+                    process_element(child, preserve_tags)
 
-            last_end = end
-
-        # Add remaining text (if any)
-        if last_end < len(text):
-            remaining_text = text[last_end:]
-            segments.append({
-                "type": "text",
-                "content": remaining_text
-            })
+        # Start processing from root
+        for child in root.children:
+            process_element(child)
 
         return segments
 
@@ -105,16 +121,8 @@ class FuriganaProcessor:
         if not text:
             return []
 
-        # Split text into sentences for better processing
-        sentences = re.split(r"([。！？\n])", text)
-        all_segments = []
-
-        for sentence in sentences:
-            if sentence.strip():
-                segments = self._split_text_with_furigana(sentence)
-                all_segments.extend(segments)
-
-        return all_segments
+        # Parse HTML to extract ruby tags
+        return self._parse_ruby_html(text)
 
 
     def to_html_with_toggle(self, segments):
@@ -132,17 +140,24 @@ class FuriganaProcessor:
                 unknown_parts.append(text)
                 no_furigana_parts.append(text)
 
+            elif segment["type"] == "html":
+                # Preserve HTML tags like <p>, <span>
+                html = segment["content"]
+                known_parts.append(html)
+                unknown_parts.append(html)
+                no_furigana_parts.append(html)
+
             elif segment["type"] == "kanji":
-                # Known kanji
-                kanji = segment["content"]
-                reading = self._get_reading(kanji)
+                # Known kanji (has furigana but marked as known)
+                kanji = segment["kanji"]
+                reading = segment["reading"]
 
                 known_parts.append(f'<ruby>{kanji}<rt>{reading}</rt></ruby>')  # With furigana
                 unknown_parts.append(kanji)  # Without furigana
                 no_furigana_parts.append(kanji)  # Without furigana
 
             elif segment["type"] == "furigana":
-                # Unknown kanji
+                # Unknown kanji (has furigana and marked as unknown)
                 kanji = segment["kanji"]
                 reading = segment["reading"]
 
@@ -205,7 +220,7 @@ class FuriganaProcessor:
 
         for segment in segments:
             if segment["type"] in ["kanji", "furigana"]:
-                kanji_text = segment.get("kanji") or segment.get("content", "")
+                kanji_text = segment.get("kanji", "")
 
                 for kanji in kanji_text:
                     if re.match(r"[\u4e00-\u9faf]", kanji):
@@ -228,14 +243,29 @@ class FuriganaProcessor:
         """Process an entire article and return enhanced data"""
         processed_article = article.copy()
 
-        # Process title
-        if article.get("title"):
-            title_segments = self.process_text(article["title"])
+        # Process title - use title_with_ruby if available, otherwise fall back to title
+        title_source = article.get("title_with_ruby") or article.get("title", "")
+        if title_source:
+            title_segments = self.process_text(title_source)
             processed_article["title_segments"] = title_segments
             processed_article["title_html"] = self.to_html_with_toggle(title_segments)
 
-        # Process content
-        if article.get("content"):
+        # Process content - use raw_html body if available
+        if article.get("raw_html"):
+            # Extract article body from raw HTML
+            soup = BeautifulSoup(article["raw_html"], "html.parser")
+            body_elem = soup.select_one("#js-article-body")
+            if body_elem:
+                content_html = str(body_elem)
+                content_segments = self.process_text(content_html)
+                processed_article["content_segments"] = content_segments
+                processed_article["content_html"] = self.to_html_with_toggle(content_segments)
+                processed_article["content_preview_html"] = self.create_preview_html(content_segments, 200)
+
+                # Add statistics
+                processed_article["stats"] = self.get_text_stats(content_segments)
+        elif article.get("content"):
+            # Fallback to plain content if raw_html not available
             content_segments = self.process_text(article["content"])
             processed_article["content_segments"] = content_segments
             processed_article["content_html"] = self.to_html_with_toggle(content_segments)
@@ -251,7 +281,7 @@ if __name__ == "__main__":
     # Test the processor
     processor = FuriganaProcessor()
 
-    test_text = "今日は良い天気です。学校に行きます。"
+    test_text = "インフルエンザ　<ruby>去年<rt>きょねん</rt></ruby>より5<ruby>週間<rt>しゅうかん</rt></ruby><ruby>早<rt>はや</rt></ruby>く「<ruby>流行<rt>りゅうこう</rt></ruby>」"
     segments = processor.process_text(test_text)
 
     print("Segments:")
