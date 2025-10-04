@@ -9,5 +9,6 @@ dependencies = [
     "pykakasi",
     "pyyaml",
     "lxml",
-    "jinja2"
+    "jinja2",
+    "playwright"
 ]

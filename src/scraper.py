@@ -8,6 +8,7 @@ import time
 import re
 from urllib.parse import urljoin, urlparse
 import hashlib
+from auth import get_nhk_token
 
 
 class NHKEasyScraper:
@@ -22,9 +23,20 @@ class NHKEasyScraper:
 
         self.session = requests.Session()
         self.session.headers.update({
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-            "Cookie": "z_at=eyJhbGciOiJFUzI1NiIsInR5cCI6ImF0K2p3dCIsImtpZCI6ImtpZC1hdXRoei1hYzEtcHJkLTAxIn0.eyJzdWIiOiJlMWI3NGJmMy1hMzRjLTRkZTktODM5NC1jMDhmMzZhNmQ3ODIiLCJpc3MiOiJodHRwczovL2EuYXV0aHouYWMxLm5oayIsImFjdGl2YXRlZEJ5Ijoic2VsZi1hY3RpdmF0ZWQiLCJjbGllbnRfaWQiOiIyOTM3ODU4NDExOCIsImxpY2Vuc2VUeXBlIjoiMCIsInByb2ZpbGVUeXBlIjoiYWJyb2FkIiwiZ3JhbnRfdHlwZSI6ImF1dGhvcml6YXRpb25fY29kZSIsInByb2ZpbGVJZCI6ImUxYjc0YmYzLWEzNGMtNGRlOS04Mzk0LWMwOGYzNmE2ZDc4MiIsInNjb3BlIjoiZ2V0Om5ld3MgZ2V0OnR2IiwiZXhwIjoxNzU5NTMzMjk4LCJpYXQiOjE3NTk1MDQ0OTgsImVudGl0eSI6Im5vbmUiLCJqdGkiOiJmOEY1cHZMRkxJNVRTcmdWTk42Ym55akk4MUxkRUFQN21QRXEtRU9kcDVBIn0.kIv_gROBlXn8BFb7b1hbzyOTeLDN4CVTLvF3EsRVObsc7vyTMc6j2o2VW3As7e85yn1m-4_njGNhsd_jPiQKOA"
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
         })
+
+        # Get fresh authentication token
+        print("Obtaining fresh authentication token...")
+        try:
+            token = get_nhk_token()
+            self.session.headers.update({
+                "Cookie": f"z_at={token}"
+            })
+            print("✅ Authentication token set successfully")
+        except Exception as e:
+            print(f"⚠️  Failed to obtain authentication token: {e}")
+            print("Proceeding without authentication (may fail)...")
 
         # Create images directory
         self.images_dir = Path("docs/images")
