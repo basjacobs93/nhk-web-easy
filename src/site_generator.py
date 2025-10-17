@@ -52,27 +52,31 @@ class SiteGenerator:
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ site_title }}</title>
+    <title>{{ site_title }} - Japanese News with Level-based Furigana</title>
     <meta name="description" content="{{ site_description }}">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <header class="site-header">
-        <div class="container">
-            <h1>{{ site_title }}</h1>
-            <p class="site-description">{{ site_description }}</p>
+        <div class="container header-container">
+            <div class="header-left">
+                <h1>{{ site_title }}</h1>
+                <span class="site-description">{{ site_description }}</span>
+            </div>
 
             <div class="controls">
-                <label class="toggle-label">
-                    <input type="checkbox" id="furigana-toggle" checked>
-                    <span class="slider"></span>
-                    <span class="label-text">未習漢字のフリガナを表示</span>
-                </label>
+                <div class="level-control">
+                    <label for="level-slider" class="level-label">
+                        <span>WaniKani Level: </span>
+                        <span id="level-value" class="level-value">10</span>
+                    </label>
+                    <input type="range" id="level-slider" min="0" max="60" value="10" class="level-slider">
+                </div>
 
                 <label class="toggle-label">
-                    <input type="checkbox" id="all-furigana-toggle">
+                    <input type="checkbox" id="show-all-toggle">
                     <span class="slider"></span>
-                    <span class="label-text">全フリガナを表示</span>
+                    <span class="label-text">Show all</span>
                 </label>
             </div>
         </div>
@@ -80,42 +84,31 @@ class SiteGenerator:
 
     <main class="container">
         <section class="articles-list">
-            <h2>最新記事</h2>
-
             {% if articles %}
                 <div class="articles-grid">
                     {% for article in articles %}
                     <article class="article-card">
-                        <div class="article-header">
-                            <h3 class="article-title">
-                                <a href="{{ article.slug }}.html">{{ article.title_html|safe }}</a>
-                            </h3>
-                            {% if article.date %}
-                            <time class="article-date">{{ article.date }}</time>
+                        <a href="{{ article.slug }}.html" class="card-link">
+                            <div class="article-header">
+                                <h3 class="article-title">{{ article.title_html|safe }}</h3>
+                                {% if article.date %}
+                                <time class="article-date">{{ article.date }}</time>
+                                {% endif %}
+                            </div>
+
+                            {% if article.local_image_path %}
+                            <div class="article-image">
+                                <img src="{{ article.local_image_path }}" alt="{{ article.title }}" loading="lazy">
+                            </div>
                             {% endif %}
-                        </div>
 
-                        {% if article.stats %}
-                        <div class="article-stats">
-                            <span class="stat">漢字: {{ article.stats.total_kanji }}</span>
-                            <span class="stat unknown">未習: {{ article.stats.unknown_kanji }}</span>
-                            <span class="stat known">既習: {{ article.stats.known_kanji }}</span>
-                        </div>
-                        {% endif %}
-
-                        {% if article.local_image_path %}
-                        <div class="article-image">
-                            <img src="{{ article.local_image_path }}" alt="{{ article.title }}" loading="lazy">
-                        </div>
-                        {% endif %}
-
-                        <div class="article-preview">
-                            {{ article.content_preview_html|safe }}...
-                        </div>
+                            <div class="article-preview">
+                                {{ article.content_preview_html|safe }}...
+                            </div>
+                        </a>
 
                         <div class="article-footer">
-                            <a href="{{ article.slug }}.html" class="read-more">続きを読む</a>
-                            <a href="{{ article.url }}" target="_blank" class="original-link">元記事</a>
+                            <a href="{{ article.url }}" target="_blank" class="original-link" onclick="event.stopPropagation()">元記事</a>
                         </div>
                     </article>
                     {% endfor %}
@@ -129,10 +122,11 @@ class SiteGenerator:
     <footer class="site-footer">
         <div class="container">
             <p>Last updated: {{ current_time }}</p>
-            <p>Data from <a href="https://www3.nhk.or.jp/news/easy/" target="_blank">NHK News Web Easy</a></p>
+            <p>Data from <a href="https://news.web.nhk/news/easy/" target="_blank">NHK News Web Easy</a></p>
         </div>
     </footer>
 
+    <script src="wanikani-data.js"></script>
     <script src="script.js"></script>
 </body>
 </html>"""
@@ -169,22 +163,26 @@ class SiteGenerator:
 </head>
 <body>
     <header class="site-header">
-        <div class="container">
-            <nav class="breadcrumb">
-                <a href="index.html">{{ site_title }}</a> > <span>記事</span>
-            </nav>
+        <div class="container header-container">
+            <div class="header-left">
+                <nav class="breadcrumb">
+                    <a href="index.html">{{ site_title }}</a> > <span>記事</span>
+                </nav>
+            </div>
 
             <div class="controls">
-                <label class="toggle-label">
-                    <input type="checkbox" id="furigana-toggle" checked>
-                    <span class="slider"></span>
-                    <span class="label-text">未習漢字のフリガナを表示</span>
-                </label>
+                <div class="level-control">
+                    <label for="level-slider" class="level-label">
+                        <span>WaniKani Level: </span>
+                        <span id="level-value" class="level-value">10</span>
+                    </label>
+                    <input type="range" id="level-slider" min="0" max="60" value="10" class="level-slider">
+                </div>
 
                 <label class="toggle-label">
-                    <input type="checkbox" id="all-furigana-toggle">
+                    <input type="checkbox" id="show-all-toggle">
                     <span class="slider"></span>
-                    <span class="label-text">全フリガナを表示</span>
+                    <span class="label-text">Show all</span>
                 </label>
             </div>
         </div>
@@ -199,24 +197,6 @@ class SiteGenerator:
                 <time class="article-date">{{ article.date }}</time>
                 {% endif %}
 
-                {% if article.stats %}
-                <div class="article-stats">
-                    <span class="stat">漢字: {{ article.stats.total_kanji }}</span>
-                    <span class="stat unknown">未習: {{ article.stats.unknown_kanji }}</span>
-                    <span class="stat known">既習: {{ article.stats.known_kanji }}</span>
-                </div>
-
-                {% if article.stats.unique_unknown_kanji %}
-                <details class="unknown-kanji-list">
-                    <summary>未習漢字一覧 ({{ article.stats.unique_unknown_kanji|length }}個)</summary>
-                    <div class="kanji-grid">
-                        {% for kanji in article.stats.unique_unknown_kanji %}
-                        <span class="kanji-item">{{ kanji }}</span>
-                        {% endfor %}
-                    </div>
-                </details>
-                {% endif %}
-                {% endif %}
             </header>
 
             {% if article.local_image_path %}
@@ -238,10 +218,11 @@ class SiteGenerator:
 
     <footer class="site-footer">
         <div class="container">
-            <p>Data from <a href="https://www3.nhk.or.jp/news/easy/" target="_blank">NHK News Web Easy</a></p>
+            <p>Data from <a href="https://news.web.nhk/news/easy/" target="_blank">NHK News Web Easy</a></p>
         </div>
     </footer>
 
+    <script src="wanikani-data.js"></script>
     <script src="script.js"></script>
 </body>
 </html>"""
@@ -292,27 +273,39 @@ body {
 
 /* Header */
 .site-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #4a5568;
     color: white;
-    padding: 2rem 0;
+    padding: 1rem 0;
     margin-bottom: 2rem;
+}
+
+.header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 2rem;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
 }
 
 .site-header h1 {
-    font-size: 2.5rem;
-    margin-bottom: 0.5rem;
-    text-align: center;
+    font-size: 1.5rem;
+    margin: 0;
+    font-weight: 600;
 }
 
 .site-description {
-    text-align: center;
-    font-size: 1.1rem;
-    opacity: 0.9;
-    margin-bottom: 2rem;
+    font-size: 0.9rem;
+    opacity: 0.85;
+    font-weight: 300;
 }
 
 .breadcrumb {
-    margin-bottom: 1rem;
+    font-size: 0.95rem;
 }
 
 .breadcrumb a {
@@ -327,15 +320,66 @@ body {
 /* Controls */
 .controls {
     display: flex;
-    justify-content: center;
-    gap: 2rem;
-    flex-wrap: wrap;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.level-control {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.level-label {
+    font-size: 0.9rem;
+    font-weight: 400;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    white-space: nowrap;
+}
+
+.level-value {
+    font-weight: 600;
+    font-size: 1rem;
+    min-width: 1.5rem;
+    text-align: center;
+}
+
+.level-slider {
+    width: 200px;
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.3);
+    outline: none;
+    -webkit-appearance: none;
+}
+
+.level-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: white;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.level-slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: white;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 
 .toggle-label {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.4rem;
     cursor: pointer;
     user-select: none;
 }
@@ -345,10 +389,10 @@ body {
 }
 
 .slider {
-    width: 50px;
-    height: 25px;
+    width: 40px;
+    height: 20px;
     background: rgba(255,255,255,0.3);
-    border-radius: 25px;
+    border-radius: 20px;
     position: relative;
     transition: background 0.3s;
 }
@@ -356,8 +400,8 @@ body {
 .slider:before {
     content: '';
     position: absolute;
-    width: 21px;
-    height: 21px;
+    width: 16px;
+    height: 16px;
     border-radius: 50%;
     background: white;
     top: 2px;
@@ -370,11 +414,12 @@ body {
 }
 
 .toggle-label input:checked + .slider:before {
-    transform: translateX(25px);
+    transform: translateX(20px);
 }
 
 .label-text {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
+    font-weight: 300;
 }
 
 /* Articles Grid */
@@ -391,6 +436,8 @@ body {
     padding: 1.5rem;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    flex-direction: column;
 }
 
 .article-card:hover {
@@ -398,17 +445,24 @@ body {
     box-shadow: 0 4px 20px rgba(0,0,0,0.15);
 }
 
-.article-title {
-    font-size: 1.3rem;
-    margin-bottom: 0.5rem;
+.card-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    flex: 1;
 }
 
-.article-title a {
-    color: #333;
+.card-link:hover {
     text-decoration: none;
 }
 
-.article-title a:hover {
+.article-title {
+    font-size: 1.3rem;
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+.card-link:hover .article-title {
     color: #667eea;
 }
 
@@ -489,15 +543,24 @@ body {
     margin: 2rem 0;
 }
 
+.article-content p {
+    margin-bottom: 1.5rem;
+}
+
+.article-content p:last-child {
+    margin-bottom: 0;
+}
+
 .article-footer {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
     padding-top: 1rem;
     border-top: 1px solid #e9ecef;
+    margin-top: auto;
 }
 
-.read-more, .original-link, .back-link {
+.original-link, .back-link {
     color: #667eea;
     text-decoration: none;
     font-weight: 500;
@@ -506,49 +569,47 @@ body {
     transition: background 0.2s;
 }
 
-.read-more:hover, .original-link:hover, .back-link:hover {
+.original-link:hover, .back-link:hover {
     background: #f8f9ff;
 }
 
 /* Furigana Styles */
 ruby {
     ruby-position: over;
+    display: ruby;
+    ruby-align: center;
 }
 
 rt {
+    display: ruby-text;
     font-size: 0.6em;
     color: #666;
     font-weight: normal;
+    line-height: 1;
+    text-align: center;
 }
 
-/* Furigana Toggle System */
-.known-version, .no-furigana-version {
+/* Level-based furigana control */
+ruby.hide-furigana rt {
     display: none;
 }
 
-.unknown-version {
-    display: inline;
+ruby.show-furigana rt {
+    display: ruby-text;
 }
 
-/* Hide furigana completely */
-body.hide-unknown-furigana .unknown-version {
-    display: none;
+/* Kanji By Level List */
+.kanji-by-level-list {
+    margin: 1rem 0;
 }
 
-body.hide-unknown-furigana .no-furigana-version {
-    display: inline;
+.kanji-by-level-list summary {
+    cursor: pointer;
+    font-weight: 500;
+    color: #667eea;
+    margin-bottom: 0.5rem;
 }
 
-/* Show all furigana */
-body.show-all-furigana .unknown-version {
-    display: none;
-}
-
-body.show-all-furigana .known-version {
-    display: inline;
-}
-
-/* Unknown Kanji List */
 .unknown-kanji-list {
     margin: 1rem 0;
 }
@@ -618,17 +679,40 @@ body.show-all-furigana .known-version {
         padding: 0 15px;
     }
 
-    .site-header h1 {
-        font-size: 2rem;
+    .header-container {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
     }
 
-    .articles-grid {
-        grid-template-columns: 1fr;
-        gap: 1rem;
+    .header-left {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
     }
 
     .controls {
         flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+        width: 100%;
+    }
+
+    .level-slider {
+        width: 100%;
+        max-width: 300px;
+    }
+
+    .site-header h1 {
+        font-size: 1.3rem;
+    }
+
+    .site-description {
+        font-size: 0.8rem;
+    }
+
+    .articles-grid {
+        grid-template-columns: 1fr;
         gap: 1rem;
     }
 
@@ -663,58 +747,63 @@ body.show-all-furigana .known-version {
 
     def generate_javascript(self):
         """Generate JavaScript file"""
-        js_content = """// Furigana toggle functionality
+        js_content = """// Level-based furigana control
 document.addEventListener('DOMContentLoaded', function() {
-    const furiganaToggle = document.getElementById('furigana-toggle');
-    const allFuriganaToggle = document.getElementById('all-furigana-toggle');
-    const body = document.body;
+    const levelSlider = document.getElementById('level-slider');
+    const levelValue = document.getElementById('level-value');
+    const showAllToggle = document.getElementById('show-all-toggle');
 
-    // Load saved preferences
-    const showUnknownFurigana = localStorage.getItem('showUnknownFurigana') !== 'false';
-    const showAllFurigana = localStorage.getItem('showAllFurigana') === 'true';
+    // Load saved level preference (default: 10)
+    const savedLevel = localStorage.getItem('waniKaniLevel') || '10';
+    levelSlider.value = savedLevel;
+    levelValue.textContent = savedLevel;
 
-    // Set initial states
-    furiganaToggle.checked = showUnknownFurigana;
-    allFuriganaToggle.checked = showAllFurigana;
+    // Load show all toggle preference
+    const showAll = localStorage.getItem('showAllFurigana') === 'true';
+    showAllToggle.checked = showAll;
 
-    // Apply initial classes
+    // Apply furigana display based on current settings
     updateFuriganaDisplay();
 
-    // Event listeners
-    furiganaToggle.addEventListener('change', function() {
-        localStorage.setItem('showUnknownFurigana', this.checked);
-        // If turning off unknown furigana, also turn off all furigana
-        if (!this.checked && allFuriganaToggle.checked) {
-            allFuriganaToggle.checked = false;
-            localStorage.setItem('showAllFurigana', false);
-        }
+    // Level slider change
+    levelSlider.addEventListener('input', function() {
+        levelValue.textContent = this.value;
+        localStorage.setItem('waniKaniLevel', this.value);
         updateFuriganaDisplay();
     });
 
-    allFuriganaToggle.addEventListener('change', function() {
+    // Show all toggle change
+    showAllToggle.addEventListener('change', function() {
         localStorage.setItem('showAllFurigana', this.checked);
-        // If turning on all furigana, also turn on unknown furigana
-        if (this.checked && !furiganaToggle.checked) {
-            furiganaToggle.checked = true;
-            localStorage.setItem('showUnknownFurigana', true);
-        }
         updateFuriganaDisplay();
     });
 
     function updateFuriganaDisplay() {
-        // Remove all furigana classes
-        body.classList.remove('hide-unknown-furigana', 'show-all-furigana');
+        const level = parseInt(levelSlider.value);
+        const showAll = showAllToggle.checked;
 
-        if (allFuriganaToggle.checked) {
-            // Show all furigana (overrides everything)
-            body.classList.add('show-all-furigana');
-        } else if (furiganaToggle.checked) {
-            // Show only unknown kanji furigana (default)
-            // No special class needed
-        } else {
-            // Hide all furigana
-            body.classList.add('hide-unknown-furigana');
-        }
+        // Get all ruby elements with data-level attribute
+        const rubyElements = document.querySelectorAll('ruby[data-level]');
+
+        rubyElements.forEach(ruby => {
+            const kanjiLevel = ruby.getAttribute('data-level');
+
+            // Show all furigana if toggle is on
+            if (showAll) {
+                ruby.classList.add('show-furigana');
+                ruby.classList.remove('hide-furigana');
+                return;
+            }
+
+            // Show furigana for kanji above user's level
+            if (kanjiLevel === 'unknown' || parseInt(kanjiLevel) > level) {
+                ruby.classList.add('show-furigana');
+                ruby.classList.remove('hide-furigana');
+            } else {
+                ruby.classList.add('hide-furigana');
+                ruby.classList.remove('show-furigana');
+            }
+        });
     }
 
     // Add smooth scrolling for anchor links
@@ -730,62 +819,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
-
-    // Add click tracking for external links
-    document.querySelectorAll('a[target="_blank"]').forEach(link => {
-        link.addEventListener('click', function() {
-            // Could add analytics here if needed
-            console.log('External link clicked:', this.href);
-        });
-    });
-});
-
-// Add keyboard shortcuts
-document.addEventListener('keydown', function(event) {
-    // F key: toggle unknown kanji furigana
-    if (event.key === 'f' || event.key === 'F') {
-        if (!event.ctrlKey && !event.metaKey && !event.altKey) {
-            const furiganaToggle = document.getElementById('furigana-toggle');
-            if (furiganaToggle && !isInputFocused()) {
-                event.preventDefault();
-                furiganaToggle.click();
-            }
-        }
-    }
-
-    // A key: toggle all furigana
-    if (event.key === 'a' || event.key === 'A') {
-        if (!event.ctrlKey && !event.metaKey && !event.altKey) {
-            const allFuriganaToggle = document.getElementById('all-furigana-toggle');
-            if (allFuriganaToggle && !isInputFocused()) {
-                event.preventDefault();
-                allFuriganaToggle.click();
-            }
-        }
-    }
-});
-
-function isInputFocused() {
-    const activeElement = document.activeElement;
-    return activeElement && (
-        activeElement.tagName === 'INPUT' ||
-        activeElement.tagName === 'TEXTAREA' ||
-        activeElement.isContentEditable
-    );
-}
-
-// Add visual feedback for keyboard shortcuts
-document.addEventListener('DOMContentLoaded', function() {
-    // Add keyboard shortcut hints
-    const furiganaToggle = document.querySelector('#furigana-toggle').closest('.toggle-label');
-    const allFuriganaToggle = document.querySelector('#all-furigana-toggle').closest('.toggle-label');
-
-    if (furiganaToggle) {
-        furiganaToggle.title = 'キーボードショートカット: F';
-    }
-    if (allFuriganaToggle) {
-        allFuriganaToggle.title = 'キーボードショートカット: A';
-    }
 });"""
 
         js_path = self.output_dir / "script.js"

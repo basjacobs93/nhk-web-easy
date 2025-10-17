@@ -51,17 +51,7 @@ jobs:
       - name: Create data directory
         run: mkdir -p data
 
-      - name: Cache WaniKani data
-        uses: actions/cache@v3
-        with:
-          path: data/cache
-          key: wanikani-cache-${{ hashFiles('src/wanikani.py') }}
-          restore-keys: |
-            wanikani-cache-
-
       - name: Run scraper and site generator
-        env:
-          WANIKANI_API_TOKEN: ${{ secrets.WANIKANI_API_TOKEN }}
         run: |
           uv run python src/main.py
 

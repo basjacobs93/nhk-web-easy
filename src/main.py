@@ -9,9 +9,9 @@ import os
 sys.path.insert(0, str(Path(__file__).parent))
 
 from scraper import NHKEasyScraper
-from wanikani import WaniKaniAPI
 from furigana_processor import FuriganaProcessor
 from site_generator import SiteGenerator
+from wanikani_levels import WaniKaniLevels
 
 
 def main():
@@ -23,15 +23,15 @@ def main():
     data_dir.mkdir(exist_ok=True)
 
     try:
-        # Step 1: Fetch WaniKani data
-        print("\n1. Fetching WaniKani kanji data...")
-        wk_api = WaniKaniAPI()
-        learned_kanji = wk_api.save_learned_kanji("data/learned_kanji.json")
-        print(f"   Found {len(learned_kanji)} learned kanji")
+        # Step 1: Generate WaniKani level data for frontend
+        print("\n1. Generating WaniKani level data for frontend...")
+        wk_levels = WaniKaniLevels("data/kanji-wanikani.json")
+        wk_levels.export_to_js("docs/wanikani-data.js")
+        print(f"   Exported level data for {len(wk_levels.kanji_by_level)} levels")
 
     except Exception as e:
-        print(f"   Warning: WaniKani API failed: {e}")
-        print("   Continuing without WaniKani data...")
+        print(f"   Warning: Failed to generate WaniKani data: {e}")
+        print("   Continuing without level data...")
 
     try:
         # Step 2: Scrape NHK Easy News
@@ -53,7 +53,7 @@ def main():
     try:
         # Step 3: Process articles with furigana
         print("\n3. Processing articles with furigana...")
-        processor = FuriganaProcessor("data/learned_kanji.json")
+        processor = FuriganaProcessor("data/kanji-wanikani.json")
 
         processed_articles = []
         for i, article in enumerate(articles, 1):
@@ -66,9 +66,9 @@ def main():
                 # Print stats
                 stats = processed_article.get("stats", {})
                 if stats:
-                    print(f"     漢字: {stats.get('total_kanji', 0)}, "
-                          f"未習: {stats.get('unknown_kanji', 0)}, "
-                          f"既習: {stats.get('known_kanji', 0)}")
+                    total_kanji = stats.get('total_kanji', 0)
+                    levels_present = len([k for k in stats.get('kanji_by_level', {}).keys() if k != 0])
+                    print(f"     漢字: {total_kanji}, Levels present: {levels_present}")
 
             except Exception as e:
                 print(f"     Error processing article: {e}")

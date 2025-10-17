@@ -8,8 +8,8 @@ wanikani:
   cache_duration: 3600 # seconds
 
 site:
-  title: "Bas's NHK Easy News"
-  description: "Japanese news practice with personalized furigana"
+  title: "WK・NHK"
+  description: "NHK Easy News with WaniKani level-based furigana"
   output_dir: "docs"
 
 github:
