@@ -41,6 +41,7 @@ venv.bak/
 # Data files (these will be generated)
 data/
 !data/.gitkeep
+!data/kanji-wanikani.json
 
 # OS
 .DS_Store
