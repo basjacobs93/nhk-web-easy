@@ -1,5 +1,5 @@
 [project]
-name = "nhkeasier"
+name = "wk-nhk"
 requires-python = ">=3.12"
 version = "0.1.0"
 description = "NHK Easy News scraper with WaniKani integration"
