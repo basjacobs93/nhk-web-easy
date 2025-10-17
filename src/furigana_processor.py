@@ -2,42 +2,29 @@ import re
 import json
 from pathlib import Path
 from bs4 import BeautifulSoup
+from wanikani_levels import WaniKaniLevels
 
 
 class FuriganaProcessor:
-    def __init__(self, learned_kanji_file="data/learned_kanji.json"):
-        # Load learned kanji
-        self.learned_kanji = self._load_learned_kanji(learned_kanji_file)
+    def __init__(self, wanikani_data_path="data/kanji-wanikani.json"):
+        # Load WaniKani level data
+        self.wk_levels = WaniKaniLevels(wanikani_data_path)
 
         # Kanji regex pattern
         self.kanji_pattern = re.compile(r"[\u4e00-\u9faf]+")
 
-    def _load_learned_kanji(self, kanji_file):
-        """Load learned kanji from file"""
-        kanji_path = Path(kanji_file)
-
-        if not kanji_path.exists():
-            print(f"Warning: {kanji_file} not found. No kanji will be marked as learned.")
-            return set()
-
-        try:
-            with open(kanji_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            return set(data.get("kanji", []))
-        except (json.JSONDecodeError, KeyError) as e:
-            print(f"Error loading learned kanji: {e}")
-            return set()
-
-    def _contains_unknown_kanji(self, text):
-        """Check if text contains any kanji not in learned set"""
+    def _get_max_kanji_level(self, text):
+        """Get the maximum WaniKani level among all kanji in text"""
         kanji_chars = self.kanji_pattern.findall(text)
+        max_level = 0
 
         for kanji_group in kanji_chars:
             for kanji in kanji_group:
-                if kanji not in self.learned_kanji:
-                    return True
+                level = self.wk_levels.get_level_for_kanji(kanji)
+                if level and level > max_level:
+                    max_level = level
 
-        return False
+        return max_level
 
     def _parse_ruby_html(self, html_text):
         """Parse HTML with ruby tags and extract segments"""
@@ -67,14 +54,14 @@ class FuriganaProcessor:
                         kanji += str(child)
 
                 if kanji and reading:
-                    # Check if this kanji group contains unknown kanji
-                    has_unknown = self._contains_unknown_kanji(kanji)
+                    # Get the maximum WaniKani level for this kanji group
+                    max_level = self._get_max_kanji_level(kanji)
 
                     segments.append({
-                        "type": "furigana" if has_unknown else "kanji",
+                        "type": "kanji",
                         "kanji": kanji,
                         "reading": reading,
-                        "unknown": has_unknown
+                        "level": max_level
                     })
             elif element.name is None:
                 # Text node
@@ -126,50 +113,29 @@ class FuriganaProcessor:
 
 
     def to_html_with_toggle(self, segments):
-        """Convert segments to HTML with toggle functionality"""
-        # Create three versions: all furigana, unknown only, no furigana
-        known_parts = []      # All furigana (show all)
-        unknown_parts = []    # Unknown furigana only (default)
-        no_furigana_parts = []  # No furigana
+        """Convert segments to HTML with level-based furigana control"""
+        parts = []
 
         for segment in segments:
             if segment["type"] == "text":
-                # Add text to all containers
-                text = segment["content"]
-                known_parts.append(text)
-                unknown_parts.append(text)
-                no_furigana_parts.append(text)
+                parts.append(segment["content"])
 
             elif segment["type"] == "html":
-                # Preserve HTML tags like <p>, <span>
-                html = segment["content"]
-                known_parts.append(html)
-                unknown_parts.append(html)
-                no_furigana_parts.append(html)
+                parts.append(segment["content"])
 
             elif segment["type"] == "kanji":
-                # Known kanji (has furigana but marked as known)
                 kanji = segment["kanji"]
                 reading = segment["reading"]
+                level = segment.get("level", 0)
 
-                known_parts.append(f'<ruby>{kanji}<rt>{reading}</rt></ruby>')  # With furigana
-                unknown_parts.append(kanji)  # Without furigana
-                no_furigana_parts.append(kanji)  # Without furigana
+                # Create ruby tag with data-level attribute for JavaScript control
+                if level > 0:
+                    parts.append(f'<ruby data-level="{level}">{kanji}<rt>{reading}</rt></ruby>')
+                else:
+                    # Kanji not in WaniKani system, always show furigana
+                    parts.append(f'<ruby data-level="unknown">{kanji}<rt>{reading}</rt></ruby>')
 
-            elif segment["type"] == "furigana":
-                # Unknown kanji (has furigana and marked as unknown)
-                kanji = segment["kanji"]
-                reading = segment["reading"]
-
-                ruby_html = f'<ruby>{kanji}<rt>{reading}</rt></ruby>'
-                known_parts.append(ruby_html)  # With furigana
-                unknown_parts.append(ruby_html)  # With furigana
-                no_furigana_parts.append(kanji)  # Without furigana
-
-        # Create HTML with three versions
-        html = f'''<span class="known-version">{"".join(known_parts)}</span><span class="unknown-version">{"".join(unknown_parts)}</span><span class="no-furigana-version">{"".join(no_furigana_parts)}</span>'''
-
-        return html
+        return "".join(parts)
 
     def create_preview_html(self, segments, max_chars=200):
         """Create a truncated preview that preserves HTML structure"""
@@ -196,8 +162,8 @@ class FuriganaProcessor:
                     })
                     break
 
-            elif segment["type"] in ["kanji", "furigana"]:
-                kanji_text = segment.get("kanji") or segment.get("content", "")
+            elif segment["type"] == "kanji":
+                kanji_text = segment.get("kanji", "")
                 if char_count + len(kanji_text) <= max_chars:
                     char_count += len(kanji_text)
                     preview_segments.append(segment)
@@ -209,33 +175,33 @@ class FuriganaProcessor:
         return self.to_html_with_toggle(preview_segments)
 
     def get_text_stats(self, segments):
-        """Get statistics about the text"""
+        """Get statistics about kanji by level"""
         stats = {
             "total_kanji": 0,
-            "unknown_kanji": 0,
-            "known_kanji": 0,
-            "unique_unknown_kanji": set(),
-            "unique_known_kanji": set()
+            "kanji_by_level": {},
+            "unique_kanji_by_level": {}
         }
 
         for segment in segments:
-            if segment["type"] in ["kanji", "furigana"]:
+            if segment["type"] == "kanji":
                 kanji_text = segment.get("kanji", "")
+                segment_level = segment.get("level", 0)
 
                 for kanji in kanji_text:
                     if re.match(r"[\u4e00-\u9faf]", kanji):
                         stats["total_kanji"] += 1
+                        level = self.wk_levels.get_level_for_kanji(kanji) or 0
 
-                        if kanji in self.learned_kanji:
-                            stats["known_kanji"] += 1
-                            stats["unique_known_kanji"].add(kanji)
-                        else:
-                            stats["unknown_kanji"] += 1
-                            stats["unique_unknown_kanji"].add(kanji)
+                        if level not in stats["kanji_by_level"]:
+                            stats["kanji_by_level"][level] = 0
+                            stats["unique_kanji_by_level"][level] = set()
+
+                        stats["kanji_by_level"][level] += 1
+                        stats["unique_kanji_by_level"][level].add(kanji)
 
         # Convert sets to lists for JSON serialization
-        stats["unique_unknown_kanji"] = list(stats["unique_unknown_kanji"])
-        stats["unique_known_kanji"] = list(stats["unique_known_kanji"])
+        for level in stats["unique_kanji_by_level"]:
+            stats["unique_kanji_by_level"][level] = list(stats["unique_kanji_by_level"][level])
 
         return stats
 
