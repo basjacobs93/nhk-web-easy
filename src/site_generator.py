@@ -730,6 +730,12 @@ ruby.show-furigana rt {
         font-size: 1.5rem;
     }
 
+    .article-card .article-title {
+        font-size: 1.1rem;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+
     .article-image img {
         height: 150px;
     }
