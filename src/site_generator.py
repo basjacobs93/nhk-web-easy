@@ -460,6 +460,9 @@ body {
     font-size: 1.3rem;
     margin-bottom: 0.5rem;
     color: #333;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    max-width: 100%;
 }
 
 .card-link:hover .article-title {
