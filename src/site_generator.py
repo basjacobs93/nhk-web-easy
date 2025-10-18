@@ -460,9 +460,6 @@ body {
     font-size: 1.3rem;
     margin-bottom: 0.5rem;
     color: #333;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    max-width: 100%;
 }
 
 .card-link:hover .article-title {
@@ -719,6 +716,10 @@ ruby.show-furigana rt {
         gap: 1rem;
     }
 
+    .article-card {
+        padding: 1rem;
+    }
+
     .article-footer {
         flex-direction: column;
         gap: 1rem;
@@ -731,12 +732,6 @@ ruby.show-furigana rt {
 
     .article-full .article-title {
         font-size: 1.5rem;
-    }
-
-    .article-card .article-title {
-        font-size: 1.1rem;
-        word-wrap: break-word;
-        overflow-wrap: break-word;
     }
 
     .article-image img {
