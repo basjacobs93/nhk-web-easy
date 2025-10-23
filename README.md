@@ -2,7 +2,7 @@
 
 A public website that displays [NHK News Web Easy](https://news.web.nhk/news/easy/) articles with adjustable furigana based on WaniKani levels. No API tokens or accounts required!
 
-**Live Site**: https://basjacobs93.github.io/wk-nhk/
+**Live Site**: https://www.wk-nhk.com/
 
 ## Features
 
