@@ -718,6 +718,8 @@ ruby.show-furigana rt {
 
     .article-card {
         padding: 1rem;
+        width: 100%;
+        max-width: 100%;
     }
 
     .article-footer {
