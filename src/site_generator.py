@@ -135,13 +135,15 @@ class SiteGenerator:
 
         # Prepare articles with slugs
         for article in articles:
-            article["slug"] = self._create_article_slug(article.get("title", ""), article.get("url", ""))
+            article["slug"] = self._create_article_slug(
+                article.get("title", ""), article.get("url", "")
+            )
 
         html = template.render(
             site_title=self.site_title,
             site_description=self.site_description,
             articles=articles,
-            current_time=datetime.now().strftime("%Y年%m月%d日 %H:%M")
+            current_time=datetime.now().strftime("%Y年%m月%d日 %H:%M"),
         )
 
         index_path = self.output_dir / "index.html"
@@ -229,12 +231,11 @@ class SiteGenerator:
 
         template = Template(template_str)
 
-        slug = self._create_article_slug(article.get("title", ""), article.get("url", ""))
-
-        html = template.render(
-            site_title=self.site_title,
-            article=article
+        slug = self._create_article_slug(
+            article.get("title", ""), article.get("url", "")
         )
+
+        html = template.render(site_title=self.site_title, article=article)
 
         article_path = self.output_dir / f"{slug}.html"
         with open(article_path, "w", encoding="utf-8") as f:
@@ -712,7 +713,7 @@ ruby.show-furigana rt {
     }
 
     .articles-grid {
-        grid-template-columns: 1fr;
+        # grid-template-columns: 1fr;
         gap: 1rem;
     }
 
